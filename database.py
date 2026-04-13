@@ -2,15 +2,27 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from dotenv import load_dotenv
 import os
+import warnings
 
-#Carregar as váriaveis do arquivo .env
+# Carregar as variáveis do arquivo .env
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    warnings.warn(
+        "DATABASE_URL não definida. Usando fallback sqlite:///./dev.db. Defina DATABASE_URL em um arquivo .env para produção.",
+        UserWarning,
+    )
+    DATABASE_URL = "sqlite:///./dev.db"
 
-engine = create_engine(DATABASE_URL)
+# Para SQLite, precisamos desse argumento extra
+connect_args = {}
+if DATABASE_URL.startswith("sqlite"):
+    connect_args = {"check_same_thread": False}
 
-SessionLocal = sessionmaker(bind=engine)
+engine = create_engine(DATABASE_URL, connect_args=connect_args)
 
-#Base para todos os models do banco
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Base para todos os models do banco
 Base = declarative_base()
